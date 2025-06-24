@@ -1,13 +1,13 @@
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "UltimateCommandPanel"
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = game:GetService("CoreGui")
 
 -- Основная панель
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0.15, 0, 0.05, 0)
+MainFrame.Size = UDim2.new(0.25, 0, 0.06, 0)
 MainFrame.Position = UDim2.new(0, 10, 0, 10)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BackgroundTransparency = 0.3
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.BackgroundTransparency = 0.2
 MainFrame.Parent = ScreenGui
 
 local CommandInput = Instance.new("TextBox")
@@ -37,341 +37,305 @@ ExecuteButton.Parent = MainFrame
 
 -- Командная система
 local Commands = {
-    -- Player commands
-    fly = function() loadstring(game:HttpGet("https://bit.ly/3Vjv6qJ"))() end,
+    -- Базовые команды
+    fly = function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGui-V3/main/FlyGuiV3.lua"))() 
+    end,
+    
     noclip = function() 
+        _G.noclip = true
         game:GetService("RunService").Stepped:Connect(function()
-            for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
+            if _G.noclip and game.Players.LocalPlayer.Character then
+                for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then 
+                        v.CanCollide = false 
+                    end
+                end
             end
         end)
     end,
-    god = function() 
-        game.Players.LocalPlayer.Character.Humanoid.Health = math.huge 
+    
+    clip = function() 
+        _G.noclip = false
     end,
+    
+    god = function() 
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.Health = math.huge 
+        end
+    end,
+    
     esp = function() 
         for _, p in pairs(game.Players:GetPlayers()) do
-            if p ~= game.Players.LocalPlayer then
+            if p ~= game.Players.LocalPlayer and p.Character then
                 local highlight = Instance.new("Highlight")
+                highlight.FillTransparency = 0.5
+                highlight.OutlineColor = Color3.new(1, 0, 0)
                 highlight.Parent = p.Character
             end
         end
     end,
+    
     speed = function(arg) 
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(arg) or 50 
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(arg) or 50 
+        end
     end,
-    jump = function(arg) 
-        game.Players.LocalPlayer.Character.Humanoid.JumpPower = tonumber(arg) or 100 
-    end,
-    tp = function(arg)
+    
+    -- 🔥 Команды для троллинга игроков
+    punish = function(arg)
         for _, p in pairs(game.Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), string.lower(arg)) then
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                p.Character.HumanoidRootPart.Anchored = true
+                task.wait(1)
+                p.Character.Humanoid.Health = 0
             end
         end
     end,
-    bring = function(arg)
+
+    orbit = function(arg)
         for _, p in pairs(game.Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), string.lower(arg)) then
-                p.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                local root = p.Character.HumanoidRootPart
+                _G.orbitPlayers = _G.orbitPlayers or {}
+                _G.orbitPlayers[p.Name] = true
+                
+                spawn(function()
+                    while _G.orbitPlayers[p.Name] and root and root.Parent do
+                        root.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * 
+                                     CFrame.new(0, 0, -8) * 
+                                     CFrame.Angles(0, math.rad(os.clock()*100), 0)
+                        root.Velocity = Vector3.new(0,0,0)
+                        task.wait(0.02)
+                    end
+                end)
             end
         end
     end,
-    invisible = function()
-        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.Transparency = 1 end
+
+    stoporbit = function(arg)
+        _G.orbitPlayers = _G.orbitPlayers or {}
+        if arg == "all" then
+            for name in pairs(_G.orbitPlayers) do
+                _G.orbitPlayers[name] = false
+            end
+        else
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if string.find(string.lower(p.Name), string.lower(arg)) then
+                    _G.orbitPlayers[p.Name] = false
+                end
+            end
         end
     end,
-    visible = function()
-        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.Transparency = 0 end
+
+    firework = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                local root = p.Character.HumanoidRootPart
+                spawn(function()
+                    for i=1, 20 do
+                        root.Velocity = Vector3.new(math.random(-50,50), math.random(100,200), math.random(-50,50))
+                        task.wait(0.1)
+                    end
+                end)
+            end
         end
     end,
-    
-    -- World commands
-    day = function() game.Lighting.TimeOfDay = "14:00:00" end,
-    night = function() game.Lighting.TimeOfDay = "00:00:00" end,
-    fog = function(arg) game.Lighting.FogEnd = tonumber(arg) or 100 end,
-    gravity = function(arg) workspace.Gravity = tonumber(arg) or 196.2 end,
-    time = function(arg) game.Lighting.ClockTime = tonumber(arg) or 12 end,
-    
-    -- Fun commands
-    dance = function()
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://3189777795"
-        game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(anim):Play()
-    end,
-    sit = function() game.Players.LocalPlayer.Character.Humanoid.Sit = true end,
-    spin = function()
-        game:GetService("RunService").Heartbeat:Connect(function()
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, 0.1, 0)
-        end)
-    end,
-    float = function()
-        game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0, 5, 0)
-    end,
-    size = function(arg)
-        local scale = tonumber(arg) or 2
-        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.Size *= scale end
+
+    swastika = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                local pos = p.Character.HumanoidRootPart.Position
+                local parts = {}
+                
+                -- Создаем свастику
+                for x = -15, 15, 5 do
+                    local part = Instance.new("Part")
+                    part.Size = Vector3.new(3,1,3)
+                    part.Material = Enum.Material.Neon
+                    part.Color = Color3.new(1,0,0)
+                    part.CFrame = CFrame.new(pos + Vector3.new(x,0,0))
+                    part.Anchored = true
+                    part.Parent = workspace
+                    table.insert(parts, part)
+                end
+                
+                for z = -15, 15, 5 do
+                    local part = Instance.new("Part")
+                    part.Size = Vector3.new(3,1,3)
+                    part.Material = Enum.Material.Neon
+                    part.Color = Color3.new(1,0,0)
+                    part.CFrame = CFrame.new(pos + Vector3.new(0,0,z))
+                    part.Anchored = true
+                    part.Parent = workspace
+                    table.insert(parts, part)
+                end
+                
+                -- Удалим через 10 секунд
+                task.wait(10)
+                for _, part in ipairs(parts) do
+                    part:Destroy()
+                end
+            end
         end
     end,
-    
-    -- Chat commands
-    spam = function(arg)
+
+    lagbomb = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                spawn(function()
+                    while p.Character do
+                        for i=1, 30 do
+                            local p = Instance.new("Part")
+                            p.Size = Vector3.new(1,1,1)
+                            p.Position = p.Character.HumanoidRootPart.Position
+                            p.Velocity = Vector3.new(math.random(-50,50), math.random(10,50), math.random(-50,50))
+                            p.Parent = workspace
+                            game:GetService("Debris"):AddItem(p, 10)
+                        end
+                        task.wait(0.2)
+                    end
+                end)
+            end
+        end
+    end,
+
+    nuke = function(arg)
+        local explosion = Instance.new("Explosion")
+        explosion.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+        explosion.BlastRadius = 1000
+        explosion.BlastPressure = 1000000
+        explosion.ExplosionType = Enum.ExplosionType.CratersAndDebris
+        explosion.Parent = workspace
+        
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= game.Players.LocalPlayer and p.Character then
+                p.Character.Humanoid.Health = 0
+            end
+        end
+    end,
+
+    gulag = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                local cage = Instance.new("Part")
+                cage.Size = Vector3.new(10,20,10)
+                cage.Transparency = 0.7
+                cage.CFrame = p.Character.HumanoidRootPart.CFrame
+                cage.Anchored = true
+                cage.CanCollide = true
+                cage.Parent = workspace
+                
+                p.Character.HumanoidRootPart.CFrame = cage.CFrame + Vector3.new(0,5,0)
+            end
+        end
+    end,
+
+    toilet = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                local toilet = Instance.new("Part")
+                toilet.Size = Vector3.new(5,3,5)
+                toilet.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0,-3,0)
+                toilet.Anchored = true
+                toilet.Parent = workspace
+                
+                p.Character.HumanoidRootPart.CFrame = toilet.CFrame * CFrame.new(0,2,0)
+                
+                local flush = Instance.new("Sound")
+                flush.SoundId = "rbxassetid://9116399631"
+                flush.Parent = toilet
+                flush:Play()
+                
+                -- Добавляем воду
+                local water = Instance.new("Part")
+                water.Size = Vector3.new(4,1,4)
+                water.CFrame = toilet.CFrame * CFrame.new(0,0.5,0)
+                water.Anchored = true
+                water.Transparency = 0.7
+                water.Color = Color3.new(0,0.5,1)
+                water.Parent = workspace
+            end
+        end
+    end,
+
+    trollface = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character and p.Character:FindFirstChild("Head") then
+                local decal = Instance.new("Decal")
+                decal.Texture = "rbxassetid://1282893"
+                decal.Face = Enum.NormalId.Front
+                decal.Parent = p.Character.Head
+            end
+        end
+    end,
+
+    spamcall = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) then
+                spawn(function()
+                    while true do
+                        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/call "..p.Name, "All")
+                        task.wait(0.1)
+                    end
+                end)
+            end
+        end
+    end,
+
+    demonize = function(arg)
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(arg)) and p.Character then
+                for _, part in pairs(p.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Color = Color3.new(0,0,0)
+                        part.Material = Enum.Material.Neon
+                        local fire = Instance.new("Fire")
+                        fire.Heat = 25
+                        fire.Size = 10
+                        fire.Parent = part
+                    end
+                end
+            end
+        end
+    end,
+
+    lagswitch = function()
+        _G.lagEnabled = not _G.lagEnabled
         spawn(function()
-            while true do
-                game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(arg or "GET GOOD", "All")
-                wait(0.3)
+            while _G.lagEnabled do
+                game:GetService("NetworkClient"):SetOutgoingKBPSLimit(1)
+                task.wait(0.5)
             end
+            game:GetService("NetworkClient"):SetOutgoingKBPSLimit(9e9)
         end)
     end,
-    pm = function(arg)
-        local target, msg = arg:match("(%S+)%s+(.+)")
-        for _, p in pairs(game.Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), string.lower(target)) then
-                game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." "..msg, "All")
-            end
-        end
-    end,
-    announce = function(arg)
-        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(arg, "All")
-    end,
-    
-    -- Admin commands
-    kick = function(arg)
+
+    banhammer = function(arg)
         for _, p in pairs(game.Players:GetPlayers()) do
             if string.find(string.lower(p.Name), string.lower(arg)) then
-                p:Kick("Admin decision")
+                local msg = "🚨 ВАС ЗАБАНИЛИ ПО ПРИЧИНЕ: "
+                local reasons = {"ЧИТЕРСТВО", "ТОКСИЧНОСТЬ", "АФК", "ОСКОРБЛЕНИЕ МОДЕРАТОРОВ"}
+                p:Kick(msg..reasons[math.random(1,#reasons)].."\n⏳ Срок: "..math.random(1,999).." дней")
             end
-        end
-    end,
-    ban = function(arg)
-        for _, p in pairs(game.Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), string.lower(arg)) then
-                p:Kick("Banned by admin")
-            end
-        end
-    end,
-    mute = function(arg)
-        -- Implementation
-    end,
-    unmute = function(arg)
-        -- Implementation
-    end,
-    
-    -- Server commands
-    shutdown = function() 
-        for _, p in pairs(game.Players:GetPlayers()) do
-            p:Kick("Server shutdown")
-        end
-    end,
-    lag = function()
-        while true do
-            for i = 1, 50 do
-                Instance.new("Part", workspace).Position = Vector3.new(math.random(-100,100), math.random(10,100), math.random(-100,100))
-            end
-            wait(0.1)
-        end
-    end,
-    crash = function()
-        while true do
-            local s = string.rep("a", 1000000)
-            print(s)
         end
     end,
     
-    -- Game-specific commands (100+)
-    heal = function() game.Players.LocalPlayer.Character.Humanoid.Health = 100 end,
-    armor = function() game.Players.LocalPlayer.Character.Humanoid.MaxHealth = 500 end,
-    ammo = function() -- Infinite ammo implementation
-    end,
-    money = function(arg)
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("IntValue") and v.Name:lower():find("money") then
-                v.Value = tonumber(arg) or 999999
-            end
-        end
-    end,
-    items = function() -- Spawn items
-    end,
-    unlock = function() -- Unlock all
-    end,
-    xp = function(arg) -- Set XP
-    end,
-    level = function(arg) -- Set level
-    end,
-    skill = function(arg) -- Max skill
-    end,
-    vehicle = function(arg) -- Spawn vehicle
-    end,
-    weapon = function(arg) -- Give weapon
-    end,
-    kill = function(arg) -- Kill player
-    end,
-    revive = function() -- Revive self
-    end,
-    stealth = function() -- Stealth mode
-    end,
-    radar = function() -- Show radar
-    end,
-    aimbot = function() -- Enable aimbot
-    end,
-    wallhack = function() -- Enable wallhack
-    end,
-    antikill = function() -- Anti kill
-    end,
-    antikick = function() -- Anti kick
-    end,
-    antiban = function() -- Anti ban
-    end,
-    nolag = function() -- Reduce lag
-    end,
-    fpsboost = function() -- FPS boost
-    end,
-    graphics = function(arg) -- Set graphics
-    end,
-    weather = function(arg) -- Set weather
-    end,
-    timefreeze = function() -- Freeze time
-    end,
-    teleport = function(arg) -- Teleport to place
-    end,
-    clone = function() -- Clone character
-    end,
-    control = function(arg) -- Control player
-    end,
-    ghost = function() -- Ghost mode
-    end,
-    phase = function() -- Phase through walls
-    end,
-    nocooldown = function() -- No cooldowns
-    end,
-    infjump = function() -- Infinite jump
-    end,
-    noragdoll = function() -- No ragdoll
-    end,
-    fire = function() -- Set on fire
-    end,
-    freeze = function(arg) -- Freeze player
-    end,
-    burn = function(arg) -- Burn player
-    end,
-    shock = function(arg) -- Shock player
-    end,
-    poison = function(arg) -- Poison player
-    end,
-    confuse = function(arg) -- Confuse player
-    end,
-    blind = function(arg) -- Blind player
-    end,
-    deafen = function(arg) -- Deafen player
-    end,
-    mute = function(arg) -- Mute player
-    end,
-    disorient = function(arg) -- Disorient player
-    end,
-    trap = function(arg) -- Trap player
-    end,
-    cage = function(arg) -- Cage player
-    end,
-    orbit = function(arg) -- Orbit player
-    end,
-    launch = function(arg) -- Launch player
-    end,
-    rocket = function(arg) -- Rocket player
-    end,
-    balloon = function(arg) -- Balloon player
-    end,
-    shrink = function(arg) -- Shrink player
-    end,
-    grow = function(arg) -- Grow player
-    end,
-    headless = function() -- Headless
-    end,
-    rainbow = function() -- Rainbow mode
-    end,
-    neon = function() -- Neon mode
-    end,
-    gold = function() -- Gold mode
-    end,
-    diamond = function() -- Diamond mode
-    end,
-    firework = function() -- Spawn fireworks
-    end,
-    blackhole = function() -- Create blackhole
-    end,
-    tornado = function() -- Create tornado
-    end,
-    earthquake = function() -- Create earthquake
-    end,
-    flood = function() -- Flood server
-    end,
-    meteor = function() -- Spawn meteor
-    end,
-    nuke = function() -- Spawn nuke
-    end,
-    reset = function() -- Reset server
-    end,
-    lights = function(arg) -- Control lights
-    end,
-    doors = function(arg) -- Control doors
-    end,
-    platform = function() -- Create platform
-    end,
-    bridge = function() -- Create bridge
-    end,
-    barrier = function() -- Create barrier
-    end,
-    forcefield = function() -- Create forcefield
-    end,
-    shield = function() -- Personal shield
-    end,
-    healaura = function() -- Heal aura
-    end,
-    damageaura = function() -- Damage aura
-    end,
-    xray = function() -- X-Ray vision
-    end,
-    thermal = function() -- Thermal vision
-    end,
-    nightvision = function() -- Night vision
-    end,
-    sonar = function() -- Sonar vision
-    end,
-    zoom = function(arg) -- Zoom
-    end,
-    thirdperson = function() -- Third person
-    end,
-    firstperson = function() -- First person
-    end,
-    cinematic = function() -- Cinematic mode
-    end,
-    recording = function() -- Start recording
-    end,
-    screenshot = function() -- Take screenshot
-    end,
-    stats = function() -- Show stats
-    end,
-    info = function(arg) -- Player info
-    end,
-    serverinfo = function() -- Server info
-    end,
-    copyid = function() -- Copy game ID
-    end,
-    rejoin = function() -- Rejoin server
-    end,
-    private = function() -- Private server
-    end,
-    shutdown = function() -- Shutdown game
-    end,
+    -- Команды управления
     closegui = function() ScreenGui:Destroy() end,
+    
     help = function()
         local allCommands = {}
         for cmd in pairs(Commands) do
             table.insert(allCommands, cmd)
         end
-        print("Available commands: " .. table.concat(allCommands, ", "))
+        table.sort(allCommands)
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Доступные команды ("..#allCommands..")",
+            Text = table.concat(allCommands, ", "),
+            Duration = 15
+        })
     end
 }
 
@@ -380,6 +344,17 @@ CommandInput:GetPropertyChangedSignal("Text"):Connect(function()
     local text = CommandInput.Text:lower()
     if text:sub(1,1) == ";" then
         local partial = text:sub(2)
+        local evilCommands = {"punish", "orbit", "firework", "swastika", "lagbomb", "nuke", 
+                             "gulag", "toilet", "trollface", "spamcall", "demonize", "banhammer"}
+        
+        for _, cmd in ipairs(evilCommands) do
+            if cmd:sub(1, #partial) == partial then
+                CommandInput.Text = ";"..cmd
+                CommandInput.CursorPosition = #text + 1
+                return
+            end
+        end
+        
         for cmd in pairs(Commands) do
             if cmd:sub(1, #partial) == partial then
                 CommandInput.Text = ";"..cmd
@@ -397,9 +372,10 @@ local function ExecuteCommand(cmdText)
     end
     
     local command, args = cmdText:match("^(%S+)%s*(.*)$")
+    command = command and command:lower() or ""
     
-    if Commands[command:lower()] then
-        pcall(Commands[command:lower()], args)
+    if Commands[command] then
+        pcall(Commands[command], args)
         return true
     end
     return false
@@ -409,8 +385,8 @@ end
 ExecuteButton.MouseButton1Click:Connect(function()
     if not ExecuteCommand(CommandInput.Text) then
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Unknown Command",
-            Text = "Type ;help for command list",
+            Title = "Неизвестная команда",
+            Text = "Введите ;help для списка команд",
             Duration = 2
         })
     end
@@ -418,36 +394,7 @@ ExecuteButton.MouseButton1Click:Connect(function()
 end)
 
 HelpButton.MouseButton1Click:Connect(function()
-    local allCommands = {}
-    for cmd in pairs(Commands) do
-        table.insert(allCommands, cmd)
-    end
-    
-    table.sort(allCommands)
-    
-    local pages = {}
-    for i = 1, #allCommands, 20 do
-        local page = table.concat(allCommands, "\n", i, math.min(i+19, #allCommands))
-        table.insert(pages, page)
-    end
-    
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Commands (1/"..#pages..")",
-        Text = pages[1],
-        Duration = 10,
-        Button1 = "Next",
-        Callback = function()
-            for i = 2, #pages do
-                wait(0.5)
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Commands ("..i.."/"..#pages..")",
-                    Text = pages[i],
-                    Duration = 10,
-                    Button1 = i < #pages and "Next" or "Close"
-                })
-            end
-        end
-    })
+    Commands.help()
 end)
 
 CommandInput.FocusLost:Connect(function(enterPressed)
@@ -461,7 +408,12 @@ local dragging, dragInput, dragStart, startPos
 
 local function update(input)
     local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale, 
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale, 
+        startPos.Y.Offset + delta.Y
+    )
 end
 
 MainFrame.InputBegan:Connect(function(input)
@@ -489,3 +441,6 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
+
+-- Инициализация
+Commands.help()
